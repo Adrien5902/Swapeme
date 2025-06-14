@@ -1,0 +1,14 @@
+{
+    "json.schemas": [
+        {
+            "fileMatch": [
+                "**/*.swapeme.json"
+            ],
+            "url": "./resources/theme.swapeme.schema.json"
+        }
+    ],
+    "cSpell.words": [
+        "schemars",
+        "swapeme"
+    ]
+}

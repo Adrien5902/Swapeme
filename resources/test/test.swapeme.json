@@ -1,0 +1,15 @@
+{
+    "wallpaper_engine": {
+        "wallpapers": [
+        {
+            "from": "workshop",
+            "id": "3445801440",
+            "monitor_id": 0
+        },
+        {
+            "from": "workshop",
+            "id": "3299228616",
+            "monitor_id": 1
+        }
+    ]}
+}

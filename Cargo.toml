@@ -1,0 +1,17 @@
+[package]
+name = "swapeme"
+version = "0.1.0"
+edition = "2024"
+authors = ["Adrien5902"]
+description = "Swap windows themes"
+
+[dependencies]
+serde = { version = "1.0.219", features = ["serde_derive"] }
+serde_json = "1.0.140"
+wallpaper_engine_cli_wrapper = { path = "../wallpaper_engine_cli_wrapper" }
+schemars = "0.9.0"
+clap = "4.5.40"
+
+[build-dependencies]
+schemars = "0.9.0"
+serde_json = "1.0.140"

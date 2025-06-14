@@ -1,0 +1,116 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "Theme",
+  "type": "object",
+  "properties": {
+    "author": {
+      "anyOf": [
+        {
+          "$ref": "#/$defs/ThemeAuthor"
+        },
+        {
+          "type": "null"
+        }
+      ]
+    },
+    "version": {
+      "type": [
+        "string",
+        "null"
+      ]
+    },
+    "wallpaper_engine": {
+      "anyOf": [
+        {
+          "$ref": "#/$defs/ThemeWallpaperEngine"
+        },
+        {
+          "type": "null"
+        }
+      ]
+    }
+  },
+  "$defs": {
+    "ThemeAuthor": {
+      "type": "object",
+      "properties": {
+        "name": {
+          "type": "string"
+        },
+        "url": {
+          "type": [
+            "string",
+            "null"
+          ]
+        }
+      },
+      "required": [
+        "name"
+      ]
+    },
+    "ThemeWEPlaylist": {
+      "type": "object",
+      "properties": {
+        "monitor_id": {
+          "type": "integer",
+          "format": "uint32",
+          "minimum": 0
+        }
+      },
+      "required": [
+        "monitor_id"
+      ]
+    },
+    "ThemeWEWallpaper": {
+      "type": "object",
+      "properties": {
+        "from": {
+          "$ref": "#/$defs/ThemeWEWallpaperSource"
+        },
+        "id": {
+          "type": "string"
+        },
+        "monitor_id": {
+          "type": "integer",
+          "format": "uint32",
+          "minimum": 0
+        }
+      },
+      "required": [
+        "id",
+        "from",
+        "monitor_id"
+      ]
+    },
+    "ThemeWEWallpaperSource": {
+      "type": "string",
+      "enum": [
+        "my_projects",
+        "workshop"
+      ]
+    },
+    "ThemeWallpaperEngine": {
+      "type": "object",
+      "properties": {
+        "playlist": {
+          "type": [
+            "array",
+            "null"
+          ],
+          "items": {
+            "$ref": "#/$defs/ThemeWEPlaylist"
+          }
+        },
+        "wallpapers": {
+          "type": [
+            "array",
+            "null"
+          ],
+          "items": {
+            "$ref": "#/$defs/ThemeWEWallpaper"
+          }
+        }
+      }
+    }
+  }
+}
