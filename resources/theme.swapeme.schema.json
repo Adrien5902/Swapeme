@@ -51,26 +51,26 @@
     "ThemeWEPlaylist": {
       "type": "object",
       "properties": {
-        "monitor_id": {
+        "monitor": {
           "type": "integer",
           "format": "uint32",
           "minimum": 0
         }
       },
       "required": [
-        "monitor_id"
+        "monitor"
       ]
     },
     "ThemeWEWallpaper": {
       "type": "object",
       "properties": {
-        "from": {
-          "$ref": "#/$defs/ThemeWEWallpaperSource"
-        },
         "id": {
           "type": "string"
         },
-        "monitor_id": {
+        "kind": {
+          "$ref": "#/$defs/WallpaperKind"
+        },
+        "monitor": {
           "type": "integer",
           "format": "uint32",
           "minimum": 0
@@ -78,15 +78,8 @@
       },
       "required": [
         "id",
-        "from",
-        "monitor_id"
-      ]
-    },
-    "ThemeWEWallpaperSource": {
-      "type": "string",
-      "enum": [
-        "my_projects",
-        "workshop"
+        "kind",
+        "monitor"
       ]
     },
     "ThemeWallpaperEngine": {
@@ -111,6 +104,14 @@
           }
         }
       }
+    },
+    "WallpaperKind": {
+      "type": "string",
+      "enum": [
+        "workshop",
+        "myprojects",
+        "defaultprojects"
+      ]
     }
   }
 }

@@ -1,10 +1,13 @@
 pub mod error;
 #[cfg(test)]
 mod test;
+
+pub mod cli;
 pub mod theme;
 
-use crate::theme::Theme;
+use crate::{cli::error, theme::Theme};
 use clap::{Arg, Command};
+use colored::Colorize;
 use std::{fs, path::Path};
 
 fn cli() -> Command {
@@ -17,7 +20,8 @@ fn cli() -> Command {
         .subcommand(
             Command::new("apply")
                 .about("Applies a theme")
-                .arg(Arg::new("theme")),
+                .arg(Arg::new("theme"))
+                .arg_required_else_help(true),
         )
 }
 
@@ -33,7 +37,10 @@ fn main() {
         Some(("apply", arg_matches)) => {
             let theme = arg_matches.get_one::<String>("theme").unwrap();
             Theme::read_file(Path::new("resources/test").join(format!("{}.swapeme.json", theme)))
-                .unwrap()
+                .expect(&error(format!(
+                    "Failed to read theme, make sure it's installed and valid, run {} to know where to place an installed theme", "swapeme path".bold(),
+                )
+                ))
                 .apply()
                 .unwrap();
         }
