@@ -1,0 +1,14 @@
+[package]
+name = "wallpaper_engine_cli_wrapper"
+version = "0.1.0"
+edition = "2024"
+authors = ["Adrien5902"]
+
+[lib]
+
+[dependencies]
+schemars = "0.9.0"
+serde = { version = "1.0.219", features = ["derive"] }
+serde_variant = "0.1.3"
+vdf-parser = "0.1.8"
+winreg = "0.55.0"
