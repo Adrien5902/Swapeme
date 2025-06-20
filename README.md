@@ -18,3 +18,5 @@ Swapeme is a windows cli ricing tool to quickly swap between themes 🔄
 - [Rainmeter](https://www.rainmeter.net/)
 - Windows terminal
 - Font and Cursor
+- Opera GX mods
+- Firefox/Zen browser css

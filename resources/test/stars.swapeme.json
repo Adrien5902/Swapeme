@@ -1,7 +1,8 @@
 {
     "spicetify": {
         "name": "StarryNight",
-        "url": ""
+        "color_scheme": "Cotton-candy",
+        "url": "https://github.com/spicetify/spicetify-themes/archive/refs/heads/master.zip"
     },
     "wallpaper_engine": {
         "wallpapers": [

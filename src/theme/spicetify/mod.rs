@@ -10,7 +10,8 @@ use schemars::JsonSchema;
 use serde::{Deserialize, Serialize};
 use std::{
     fmt::Display,
-    io::{Cursor, Read},
+    fs::{self, File},
+    io::{self, Cursor, Read},
     path::PathBuf,
     process::{Command, Stdio},
 };
@@ -91,12 +92,12 @@ impl Spicetify {
         self.config()
             .arg("color_scheme")
             .arg(color_scheme)
-            .spawn()?;
+            .output()?;
         Ok(())
     }
 
     pub fn apply(&self) -> Result<()> {
-        self.invoke_command().arg("apply").spawn()?;
+        self.invoke_command().arg("apply").output()?;
         Ok(())
     }
 
@@ -105,13 +106,14 @@ impl Spicetify {
     }
 
     pub fn set_theme(&self, theme: &ThemeSpicetify) -> Result<()> {
-        if !self.get_theme_path(&theme.name).exists() {
+        if !self.get_theme_path(&theme.name).join("color.ini").exists() {
             return Err(SpicetifyThemeNotFoundError(self.clone(), theme.clone()).into());
         }
+
         self.config()
             .arg("current_theme")
             .arg(&theme.name)
-            .spawn()?;
+            .output()?;
 
         self.set_color_scheme(
             &theme
@@ -119,6 +121,7 @@ impl Spicetify {
                 .as_ref()
                 .unwrap_or(&"Spotify".to_string()),
         )?;
+
         self.apply()?;
         Ok(())
     }
@@ -130,11 +133,27 @@ impl Spicetify {
             panic!("" /* TODO */)
         }
 
+        let path = self.get_theme_path(&theme.name);
+        fs::create_dir_all(&path)?;
+
         let mut content = Vec::new();
         response.read_to_end(&mut content)?;
         let reader = Cursor::new(content);
         let mut zip = ZipArchive::new(reader)?;
-        zip.extract_unwrapped_root_dir(self.get_theme_path(&theme.name), |_| true)?;
+        for i in 0..zip.len() {
+            let mut file = zip.by_index(i)?;
+            let file_name = file.name().to_owned();
+            if file_name.contains(&theme.name)
+                && ["user.css", "color.ini", "theme.js"]
+                    .iter()
+                    .find(|name| file_name.contains(*name))
+                    .is_some()
+            {
+                let out =
+                    &mut File::create(path.join(PathBuf::from(file_name).file_name().unwrap()))?;
+                io::copy(&mut file, out)?;
+            }
+        }
 
         Ok(())
     }
