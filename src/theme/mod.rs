@@ -1,6 +1,13 @@
+pub mod spicetify;
 pub mod wallpaper_engine;
 
-use crate::error::Result;
+use crate::{
+    error::Result,
+    theme::{
+        spicetify::ThemeSpicetify,
+        wallpaper_engine::{ThemeAuthor, ThemeWallpaperEngine},
+    },
+};
 use schemars::JsonSchema;
 use serde::{Deserialize, Serialize};
 use std::{fs, path::Path};
@@ -8,8 +15,9 @@ use std::{fs, path::Path};
 #[derive(Deserialize, Serialize, JsonSchema)]
 pub struct Theme {
     pub version: Option<String>,
-    pub author: Option<wallpaper_engine::ThemeAuthor>,
-    pub wallpaper_engine: Option<wallpaper_engine::ThemeWallpaperEngine>,
+    pub author: Option<ThemeAuthor>,
+    pub wallpaper_engine: Option<ThemeWallpaperEngine>,
+    pub spicetify: Option<ThemeSpicetify>,
 }
 
 pub trait ThemeApp {
@@ -22,6 +30,8 @@ impl Theme {
             .as_ref()
             .map(|w| w.apply())
             .transpose()?;
+
+        self.spicetify.as_ref().map(|s| s.apply()).transpose()?;
 
         Ok(())
     }

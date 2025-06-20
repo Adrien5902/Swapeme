@@ -1,10 +1,9 @@
-pub mod error;
-#[cfg(test)]
-mod test;
-
+use super::ThemeApp;
+use crate::cli::start_cmd;
+use crate::error::{Error, Result};
+use crate::theme::wallpaper_engine::error::{InstallationNotFoundError, WallpaperNotFoundError};
 use schemars::JsonSchema;
-use serde::Deserialize;
-use serde::Serialize;
+use serde::{Deserialize, Serialize};
 use serde_variant::to_variant_name;
 use std::fmt::Display;
 use std::fs;
@@ -14,9 +13,60 @@ use vdf_parser::VdfValue;
 use vdf_parser::error::VdfError;
 use vdf_parser::parse_vdf_text;
 use winreg::RegKey;
-use winreg::enums::*;
+use winreg::enums::HKEY_LOCAL_MACHINE;
 
-use crate::error::Error;
+pub mod error;
+
+impl ThemeApp for ThemeWallpaperEngine {
+    fn apply(&self) -> Result<()> {
+        let Some(we) =
+            Error::error_prone_step(&|| WallpaperEngine::new().map_err(|e| (e).into()), None)
+        else {
+            return Ok(());
+        };
+
+        if let Some(wallpapers) = &self.wallpapers {
+            for wallpaper in wallpapers {
+                Error::error_prone_step(
+                    &|| {
+                        we.set_wallpaper(&wallpaper.wallpaper, wallpaper.monitor)
+                            .map_err(|e| e.into())
+                    },
+                    Some(&format!(
+                        "Applied wallpaper {} from {} on monitor {}",
+                        wallpaper.wallpaper.id, wallpaper.wallpaper.kind, wallpaper.monitor
+                    )),
+                );
+            }
+        }
+
+        Ok(())
+    }
+}
+
+#[derive(Deserialize, Serialize, JsonSchema)]
+pub struct ThemeAuthor {
+    pub name: String,
+    pub url: Option<String>,
+}
+
+#[derive(Deserialize, Serialize, JsonSchema)]
+pub struct ThemeWallpaperEngine {
+    pub wallpapers: Option<Vec<ThemeWEWallpaper>>,
+    pub playlist: Option<Vec<ThemeWEPlaylist>>,
+}
+
+#[derive(Deserialize, Serialize, JsonSchema)]
+pub struct ThemeWEPlaylist {
+    pub monitor: u32,
+}
+
+#[derive(Deserialize, Serialize, JsonSchema)]
+pub struct ThemeWEWallpaper {
+    #[serde(flatten)]
+    pub wallpaper: Wallpaper,
+    pub monitor: u32,
+}
 
 #[derive(Debug, Clone)]
 pub struct WallpaperEngine {
@@ -26,16 +76,16 @@ pub struct WallpaperEngine {
 impl WallpaperEngine {
     pub const STEAM_GAME_ID: &str = "431960";
 
-    fn get_steam_path() -> Result<String, Error> {
+    fn get_steam_path() -> Result<String> {
         let hklm = RegKey::predef(HKEY_LOCAL_MACHINE);
         let steam_key = hklm
             .open_subkey("SOFTWARE\\WOW6432Node\\Valve\\Steam")
-            .map_err(|_| Error::WallpaperEngineNotInstalled)?;
+            .map_err(|_| InstallationNotFoundError {})?;
         let path: String = steam_key.get_value("InstallPath")?;
         Ok(path)
     }
 
-    fn get_wallpaper_engine_path(steam_path: &str) -> Result<String, Error> {
+    fn get_wallpaper_engine_path(steam_path: &str) -> Result<String> {
         let vdf_path = format!("{}/steamapps/libraryfolders.vdf", steam_path);
         let content = fs::read_to_string(&vdf_path)?;
         let data = parse_vdf_text(&content)?;
@@ -57,14 +107,14 @@ impl WallpaperEngine {
                 return Ok(format!("{}/steamapps/common/wallpaper_engine", path));
             }
         }
-        Err(Error::WallpaperEngineNotInstalled)
+        Err(InstallationNotFoundError {}.into())
     }
 
     pub fn new_with_path(path: PathBuf) -> Self {
         Self { path }
     }
 
-    pub fn new() -> Result<Self, Error> {
+    pub fn new() -> Result<Self> {
         Ok(Self::new_with_path(PathBuf::from(
             Self::get_wallpaper_engine_path(&Self::get_steam_path()?)?,
         )))
@@ -104,14 +154,14 @@ impl WallpaperEngine {
         command
     }
 
-    pub fn set_wallpaper(&self, wallpaper: &Wallpaper, monitor: u32) -> Result<(), Error> {
+    pub fn set_wallpaper(&self, wallpaper: &Wallpaper, monitor: u32) -> Result<()> {
         let wallpaper_path = match &wallpaper.kind {
             WallpaperKind::Workshop => self.get_workshop_wallpaper_path(&wallpaper.id),
             other => self.get_local_wallpaper_path(&wallpaper.id, &other.to_string()),
         };
 
         if !wallpaper_path.exists() {
-            return Err(Error::WallpaperNotFound(wallpaper.clone(), self.clone()));
+            return Err(WallpaperNotFoundError(wallpaper.clone(), self.clone()).into());
         }
 
         let process = self
@@ -130,20 +180,11 @@ impl WallpaperEngine {
             .status
             .success()
             .then_some(())
-            .ok_or(Error::WallpaperEngineNotInstalled)
+            .ok_or(InstallationNotFoundError {}.into())
     }
 
-    pub fn open_workshop_page_for_wallpaper(
-        &self,
-        wallpaper_id: &str,
-    ) -> Result<(), std::io::Error> {
-        Command::new("cmd")
-            .args([
-                "/C",
-                "start",
-                &format!("steam://url/CommunityFilePage/{}", wallpaper_id),
-            ])
-            .spawn()?;
+    pub fn open_workshop_page_for_wallpaper(&self, wallpaper_id: &str) -> Result<()> {
+        start_cmd(&format!("steam://url/CommunityFilePage/{}", wallpaper_id))?;
         Ok(())
     }
 

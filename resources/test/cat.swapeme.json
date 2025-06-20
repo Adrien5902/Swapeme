@@ -8,8 +8,13 @@
         },
         {
             "kind": "workshop",
-            "id": "3463520581",
+            "id": "3299228616",
             "monitor": 1
         }
-    ]}
+    ]},
+    "spicetify": {
+        "name": "Cat",
+        "color_scheme": "Spotify",
+        "url": "https://github.com/Adrien5902/SpicetifyCat/archive/refs/heads/main.zip"
+    }
 }

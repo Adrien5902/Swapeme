@@ -1,0 +1,20 @@
+{
+    "spicetify": {
+        "name": "StarryNight",
+        "url": ""
+    },
+    "wallpaper_engine": {
+        "wallpapers": [
+            {
+                "id": "2905198981",
+                "kind": "workshop",
+                "monitor": 0
+            },
+            {
+                "id": "2142333294",
+                "kind": "workshop",
+                "monitor": 1
+            }
+        ]
+    }
+}

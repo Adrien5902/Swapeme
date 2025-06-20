@@ -13,6 +13,16 @@
         }
       ]
     },
+    "spicetify": {
+      "anyOf": [
+        {
+          "$ref": "#/$defs/ThemeSpicetify"
+        },
+        {
+          "type": "null"
+        }
+      ]
+    },
     "version": {
       "type": [
         "string",
@@ -46,6 +56,27 @@
       },
       "required": [
         "name"
+      ]
+    },
+    "ThemeSpicetify": {
+      "type": "object",
+      "properties": {
+        "color_scheme": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "name": {
+          "type": "string"
+        },
+        "url": {
+          "type": "string"
+        }
+      },
+      "required": [
+        "name",
+        "url"
       ]
     },
     "ThemeWEPlaylist": {

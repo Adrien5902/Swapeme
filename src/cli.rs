@@ -1,7 +1,9 @@
-use std::fmt::Display;
+use std::{fmt::Display, process::Command};
 
 use colored::Colorize;
-use dialoguer::Select;
+use dialoguer::{Input, Select};
+
+use crate::error::Result;
 
 pub fn skip_dialog<F, R>(prompt: &str, item: &str, action: &str, on_action: F) -> Option<R>
 where
@@ -32,4 +34,17 @@ pub fn success(msg: impl Display) -> String {
 
 pub fn display_success(msg: impl Display) {
     println!("{}", success(msg))
+}
+
+pub fn start_cmd(command: &str) -> Result<()> {
+    Command::new("cmd").args(["/C", "start", command]).spawn()?;
+    Ok(())
+}
+
+pub fn wait_for_user(action: &str) {
+    Input::new()
+        .default(true)
+        .with_prompt(format!("Waiting for {} press enter when done", action))
+        .interact()
+        .unwrap();
 }
