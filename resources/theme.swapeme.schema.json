@@ -38,9 +38,26 @@
           "type": "null"
         }
       ]
+    },
+    "windows": {
+      "anyOf": [
+        {
+          "$ref": "#/$defs/ThemeWindows"
+        },
+        {
+          "type": "null"
+        }
+      ]
     }
   },
   "$defs": {
+    "ColorTheme": {
+      "type": "string",
+      "enum": [
+        "light",
+        "dark"
+      ]
+    },
     "ThemeAuthor": {
       "type": "object",
       "properties": {
@@ -136,6 +153,31 @@
         }
       }
     },
+    "ThemeWindows": {
+      "type": "object",
+      "properties": {
+        "color_scheme": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/WindowsColorScheme"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "wallpaper": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/WindowsWallpaper"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        }
+      }
+    },
     "WallpaperKind": {
       "type": "string",
       "enum": [
@@ -143,6 +185,84 @@
         "myprojects",
         "defaultprojects"
       ]
+    },
+    "WindowsColorScheme": {
+      "type": "object",
+      "properties": {
+        "accent_color": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/color"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "app_theme": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/ColorTheme"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "system_color_theme": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/ColorTheme"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        }
+      }
+    },
+    "WindowsWallpaper": {
+      "oneOf": [
+        {
+          "type": "object",
+          "properties": {
+            "type": {
+              "type": "string",
+              "const": "single"
+            },
+            "url": {
+              "type": "string"
+            }
+          },
+          "required": [
+            "type",
+            "url"
+          ]
+        },
+        {
+          "type": "object",
+          "properties": {
+            "type": {
+              "type": "string",
+              "const": "diaporama"
+            },
+            "urls": {
+              "type": "array",
+              "items": {
+                "type": "string"
+              }
+            }
+          },
+          "required": [
+            "type",
+            "urls"
+          ]
+        }
+      ]
+    },
+    "color": {
+      "type": "string",
+      "pattern": "^#([A-Fa-f0-9]{8})$"
     }
   }
 }

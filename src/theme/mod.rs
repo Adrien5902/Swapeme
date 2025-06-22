@@ -1,11 +1,13 @@
 pub mod spicetify;
 pub mod wallpaper_engine;
+pub mod windows;
 
 use crate::{
     error::Result,
     theme::{
         spicetify::ThemeSpicetify,
         wallpaper_engine::{ThemeAuthor, ThemeWallpaperEngine},
+        windows::ThemeWindows,
     },
 };
 use schemars::JsonSchema;
@@ -18,6 +20,7 @@ pub struct Theme {
     pub author: Option<ThemeAuthor>,
     pub wallpaper_engine: Option<ThemeWallpaperEngine>,
     pub spicetify: Option<ThemeSpicetify>,
+    pub windows: Option<ThemeWindows>,
 }
 
 pub trait ThemeApp {

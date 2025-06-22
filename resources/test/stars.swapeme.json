@@ -17,5 +17,12 @@
                 "monitor": 1
             }
         ]
+    },
+    "windows": {
+        "wallpaper":{ 
+            "type": "diaporama",
+            "urls": []
+        },
+        "color_scheme": {"accent_color": "#ffffffff", "system_color_theme": "light"}
     }
 }

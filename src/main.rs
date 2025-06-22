@@ -3,6 +3,7 @@ pub mod error;
 mod test;
 
 pub mod cli;
+pub mod color;
 pub mod theme;
 
 use crate::{cli::error, theme::Theme};
