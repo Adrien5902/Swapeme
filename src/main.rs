@@ -6,7 +6,10 @@ pub mod cli;
 pub mod color;
 pub mod theme;
 
-use crate::{cli::error, theme::Theme};
+use crate::{
+    cli::error,
+    theme::{Theme, ThemeApp, spicetify::ThemeSpicetify, wallpaper_engine::ThemeWallpaperEngine},
+};
 use clap::{Arg, Command};
 use colored::Colorize;
 use std::{fs, path::Path};
@@ -24,6 +27,7 @@ fn cli() -> Command {
                 .arg(Arg::new("theme"))
                 .arg_required_else_help(true),
         )
+        .subcommand(Command::new("create").about("Create a new theme based on your current config"))
 }
 
 fn main() {
@@ -34,6 +38,16 @@ fn main() {
             let schema = schemars::schema_for!(Theme);
             let contents = serde_json::to_string_pretty(&schema).unwrap();
             fs::write("resources/theme.swapeme.schema.json", &contents).unwrap();
+        }
+        Some(("create", _)) => {
+            let theme = Theme {
+                author: None,
+                version: None,
+                spicetify: ThemeSpicetify::ask_to_get_current(),
+                windows: None,
+                wallpaper_engine: ThemeWallpaperEngine::ask_to_get_current(),
+            };
+            theme.write_json("test.swapeme.json").unwrap()
         }
         Some(("apply", arg_matches)) => {
             let theme = arg_matches.get_one::<String>("theme").unwrap();

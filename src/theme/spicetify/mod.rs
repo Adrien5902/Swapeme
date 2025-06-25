@@ -1,8 +1,8 @@
 pub mod error;
 
 use crate::{
-    cli::display_success,
-    error::{Error, HandledError, Result},
+    cli::{display_error, display_success},
+    error::{Error, HandledError, Result, UnhandledError},
     theme::{ThemeApp, spicetify::error::SpicetifyNotInstalledError},
 };
 use reqwest::blocking::get;
@@ -13,12 +13,12 @@ use std::{
     fs::{self, File},
     io::{self, Cursor, Read},
     path::PathBuf,
-    process::{Command, Stdio},
+    process::Command,
 };
 use zip::ZipArchive;
 
 #[derive(Clone)]
-struct Spicetify {
+pub struct Spicetify {
     is_global: bool,
     path: PathBuf,
 }
@@ -27,21 +27,35 @@ struct Spicetify {
 pub struct ThemeSpicetify {
     name: String,
     color_scheme: Option<String>,
-    url: String,
+    url: Option<String>,
 }
 
 impl ThemeApp for ThemeSpicetify {
-    fn apply(&self) -> Result<()> {
-        if let Some(spicetify) = Error::error_prone_step(&|| Spicetify::new(), None) {
-            Error::error_prone_step(
-                &|| {
-                    spicetify.set_theme(&self)?;
-                    Ok(())
-                },
-                Some(&format!("Applied theme {} to spotify", self.name)),
-            );
-        }
+    const NAME: &'static str = "Spotify (Spicetify)";
+    type App = Spicetify;
+
+    fn get_app() -> Option<Self::App> {
+        Error::error_prone_step(&|| Spicetify::new(), None)
+    }
+
+    fn apply(&self, app: Spicetify) -> Result<()> {
+        Error::error_prone_step(
+            &|| Ok(app.set_theme(&self)?),
+            Some(&format!("Applied theme {} to spotify", self.name)),
+        );
         Ok(())
+    }
+
+    fn get_current(app: Self::App) -> Result<Self>
+    where
+        Self: Sized,
+    {
+        let setting = app.read_config()?.setting;
+        Ok(ThemeSpicetify {
+            name: setting.current_theme,
+            color_scheme: setting.color_scheme,
+            url: None,
+        })
     }
 }
 
@@ -71,14 +85,12 @@ impl Spicetify {
     }
 
     pub fn invoke_command(&self) -> Command {
-        let mut cmd = if self.is_global {
+        let cmd = if self.is_global {
             Command::new(Self::APP_NAME)
         } else {
             let exe_path = self.path.join(Self::EXE_NAME);
             Command::new(exe_path)
         };
-        cmd.stdout(Stdio::null());
-        cmd.stderr(Stdio::null());
         cmd
     }
 
@@ -127,7 +139,11 @@ impl Spicetify {
     }
 
     pub fn download_theme(&self, theme: &ThemeSpicetify) -> Result<()> {
-        let mut response = get(&theme.url)?;
+        let Some(url) = &theme.url else {
+            Err(UnhandledError::FailedToDownloadTheme)?
+        };
+
+        let mut response = get(url)?;
 
         if !response.status().is_success() {
             panic!("" /* TODO */)
@@ -157,6 +173,33 @@ impl Spicetify {
 
         Ok(())
     }
+
+    pub fn get_config_path(&self) -> Result<PathBuf> {
+        Ok(PathBuf::from(
+            String::from_utf8(self.invoke_command().arg("--config").output()?.stdout)
+                .unwrap()
+                .lines()
+                .next()
+                .unwrap(),
+        ))
+    }
+
+    pub fn read_config(&self) -> Result<SpicetifyConfig> {
+        let content = fs::read_to_string(self.get_config_path()?)?;
+        Ok(serde_ini::from_str(&content).unwrap())
+    }
+}
+
+#[derive(Debug, Deserialize)]
+pub struct SpicetifyConfig {
+    #[serde(rename = "Setting")]
+    setting: SpicetifyConfigSetting,
+}
+
+#[derive(Debug, Deserialize)]
+pub struct SpicetifyConfigSetting {
+    current_theme: String,
+    color_scheme: Option<String>,
 }
 
 pub struct SpicetifyThemeNotFoundError(Spicetify, ThemeSpicetify);
@@ -176,7 +219,9 @@ impl HandledError for SpicetifyThemeNotFoundError {
     }
     fn handle(&self) {
         println!("Downloading theme...");
-        self.0.download_theme(&self.1).unwrap();
-        display_success(format!("Downloaded theme {}", self.1.name));
+        match self.0.download_theme(&self.1) {
+            Ok(_) => display_success(format!("Downloaded theme {}", self.1.name)),
+            Err(e) => display_error(format!("{:?}", e)),
+        }
     }
 }

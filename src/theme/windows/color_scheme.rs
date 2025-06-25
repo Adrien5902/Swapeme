@@ -21,7 +21,10 @@ pub struct WindowsColorScheme {
 }
 
 impl ThemeApp for WindowsColorScheme {
-    fn apply(&self) -> Result<()> {
+    const NAME: &'static str = "Windows color scheme";
+    type App = ();
+
+    fn apply(&self, app: Self::App) -> Result<()> {
         let hkcu = RegKey::predef(HKEY_CURRENT_USER);
 
         let (key, _) = hkcu
@@ -69,5 +72,17 @@ impl ThemeApp for WindowsColorScheme {
             );
         }
         Ok(())
+    }
+
+    fn get_current(app: Self::App) -> Result<Self> {
+        Ok(Self {
+            system_color_theme: None,
+            app_theme: None,
+            accent_color: None,
+        })
+    }
+
+    fn get_app() -> Option<Self::App> {
+        Some(())
     }
 }

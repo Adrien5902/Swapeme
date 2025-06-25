@@ -66,6 +66,7 @@ impl From<UnhandledError> for Error {
 
 #[derive(Debug)]
 pub enum UnhandledError {
+    FailedToDownloadTheme,
     SerdeJSON(serde_json::Error),
     VdfError(VdfError),
     IOError(io::Error),

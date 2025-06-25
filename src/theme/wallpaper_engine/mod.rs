@@ -1,13 +1,14 @@
 use super::ThemeApp;
 use crate::cli::start_cmd;
 use crate::error::{Error, Result};
+use crate::theme::wallpaper_engine::config::WallpaperEngineUserConfig;
 use crate::theme::wallpaper_engine::error::{InstallationNotFoundError, WallpaperNotFoundError};
 use schemars::JsonSchema;
 use serde::{Deserialize, Serialize};
 use serde_variant::to_variant_name;
 use std::fmt::Display;
 use std::fs;
-use std::path::PathBuf;
+use std::path::{Path, PathBuf};
 use std::process::Command;
 use vdf_parser::VdfValue;
 use vdf_parser::error::VdfError;
@@ -15,21 +16,19 @@ use vdf_parser::parse_vdf_text;
 use winreg::RegKey;
 use winreg::enums::HKEY_LOCAL_MACHINE;
 
+pub mod config;
 pub mod error;
 
 impl ThemeApp for ThemeWallpaperEngine {
-    fn apply(&self) -> Result<()> {
-        let Some(we) =
-            Error::error_prone_step(&|| WallpaperEngine::new().map_err(|e| (e).into()), None)
-        else {
-            return Ok(());
-        };
+    const NAME: &'static str = "Wallpaper engine";
+    type App = WallpaperEngine;
 
+    fn apply(&self, app: WallpaperEngine) -> Result<()> {
         if let Some(wallpapers) = &self.wallpapers {
             for wallpaper in wallpapers {
                 Error::error_prone_step(
                     &|| {
-                        we.set_wallpaper(&wallpaper.wallpaper, wallpaper.monitor)
+                        app.set_wallpaper(&wallpaper.wallpaper, wallpaper.monitor)
                             .map_err(|e| e.into())
                     },
                     Some(&format!(
@@ -42,26 +41,34 @@ impl ThemeApp for ThemeWallpaperEngine {
 
         Ok(())
     }
+
+    fn get_current(app: WallpaperEngine) -> Result<Self> {
+        Ok((app.read_config()?.get_current_user_config().unwrap()).into())
+    }
+    fn get_app() -> Option<Self::App> {
+        Error::error_prone_step(&|| WallpaperEngine::new().map_err(|e| (e).into()), None)
+    }
 }
 
-#[derive(Deserialize, Serialize, JsonSchema)]
+#[derive(Debug, Deserialize, Serialize, JsonSchema)]
 pub struct ThemeAuthor {
     pub name: String,
     pub url: Option<String>,
 }
 
-#[derive(Deserialize, Serialize, JsonSchema)]
+#[derive(Debug, Deserialize, Serialize, JsonSchema)]
 pub struct ThemeWallpaperEngine {
     pub wallpapers: Option<Vec<ThemeWEWallpaper>>,
     pub playlist: Option<Vec<ThemeWEPlaylist>>,
 }
 
-#[derive(Deserialize, Serialize, JsonSchema)]
+#[derive(Debug, Deserialize, Serialize, JsonSchema)]
 pub struct ThemeWEPlaylist {
+    //TODO
     pub monitor: u32,
 }
 
-#[derive(Deserialize, Serialize, JsonSchema)]
+#[derive(Debug, Deserialize, Serialize, JsonSchema)]
 pub struct ThemeWEWallpaper {
     #[serde(flatten)]
     pub wallpaper: Wallpaper,
@@ -187,22 +194,13 @@ impl WallpaperEngine {
         start_cmd(&format!("steam://url/CommunityFilePage/{}", wallpaper_id))?;
         Ok(())
     }
-
-    // pub fn get_current_wallpaper(&self, monitor: u32) -> Result<String, Error> {
-    //     Ok(String::from_utf8(
-    //         self.invoke_command()
-    //             .args(["getWallpaper", "-monitor", &monitor.to_string()])
-    //             .output()?
-    //             .stdout,
-    //     )
-    //     .unwrap())
-    // }
 }
 
 #[derive(Debug, PartialEq, Eq, Serialize, Deserialize, JsonSchema, Clone)]
 pub struct Wallpaper {
     pub id: String,
     pub kind: WallpaperKind,
+    // pub config: TODO
 }
 
 #[derive(Debug, PartialEq, Eq, Serialize, Deserialize, JsonSchema, Clone, Copy)]
@@ -216,5 +214,73 @@ pub enum WallpaperKind {
 impl Display for WallpaperKind {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         f.write_str(to_variant_name(self).unwrap())
+    }
+}
+
+impl From<&WallpaperEngineUserConfig> for ThemeWallpaperEngine {
+    fn from(value: &WallpaperEngineUserConfig) -> Self {
+        let mut wallpapers = vec![];
+        let mut playlists = vec![];
+
+        for (key, value) in value
+            .general
+            .wallpaper_config
+            .as_ref()
+            .expect("Couldn't find wallpaper config")
+            .selected_wallpapers
+            .iter()
+        {
+            if let Some(playlist) = &value.playlist {
+                playlists.push(ThemeWEPlaylist { monitor: key.0 });
+                todo!();
+            } else {
+                let wallpaper = ThemeWEWallpaper {
+                    wallpaper: value.file.as_path().into(),
+                    monitor: key.0,
+                };
+                wallpapers.push(wallpaper);
+            }
+        }
+
+        ThemeWallpaperEngine {
+            wallpapers: (wallpapers.len() != 0).then_some(wallpapers),
+            playlist: (playlists.len() != 0).then_some(playlists),
+        }
+    }
+}
+
+impl From<&Path> for Wallpaper {
+    fn from(value: &Path) -> Self {
+        let wallpaper_dir = value.parent().unwrap();
+        Wallpaper {
+            id: wallpaper_dir
+                .file_name()
+                .unwrap()
+                .to_str()
+                .unwrap()
+                .to_string(),
+            kind: wallpaper_dir.parent().unwrap().into(),
+        }
+    }
+}
+
+impl From<&Path> for WallpaperKind {
+    fn from(value: &Path) -> Self {
+        let path_str = value.to_str().unwrap().to_string();
+        if path_str.contains("workshop") {
+            WallpaperKind::Workshop
+        } else {
+            serde_json::from_str(&format!(
+                "\"{}\"",
+                value
+                    .parent()
+                    .unwrap()
+                    .file_name()
+                    .unwrap()
+                    .to_str()
+                    .unwrap(),
+            ))
+            .unwrap()
+        }
     }
 }

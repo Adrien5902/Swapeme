@@ -1,0 +1,25 @@
+{
+  "version": null,
+  "author": null,
+  "wallpaper_engine": {
+    "wallpapers": [
+      {
+        "id": "3189805199",
+        "kind": "workshop",
+        "monitor": 0
+      },
+      {
+        "id": "3299228616",
+        "kind": "workshop",
+        "monitor": 1
+      }
+    ],
+    "playlist": null
+  },
+  "spicetify": {
+    "name": "Cat",
+    "color_scheme": "Spotify",
+    "url": null
+  },
+  "windows": null
+}

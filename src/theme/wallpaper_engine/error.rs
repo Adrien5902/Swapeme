@@ -48,6 +48,6 @@ impl HandledError for InstallationNotFoundError {
     }
 
     fn handle(&self) {
-        //TODO
+        todo!();
     }
 }

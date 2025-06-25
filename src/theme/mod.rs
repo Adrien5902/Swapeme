@@ -10,6 +10,7 @@ use crate::{
         windows::ThemeWindows,
     },
 };
+use dialoguer::Confirm;
 use schemars::JsonSchema;
 use serde::{Deserialize, Serialize};
 use std::{fs, path::Path};
@@ -24,17 +25,47 @@ pub struct Theme {
 }
 
 pub trait ThemeApp {
-    fn apply(&self) -> Result<()>;
+    const NAME: &'static str;
+    type App;
+
+    fn get_app() -> Option<Self::App>;
+    fn apply(&self, app: Self::App) -> Result<()>;
+    fn get_current(app: Self::App) -> Result<Self>
+    where
+        Self: Sized;
+
+    fn ask_to_get_current() -> Option<Self>
+    where
+        Self: Sized,
+    {
+        if let Some(app) = Self::get_app() {
+            Confirm::new()
+                .with_prompt(format!("Include {} theme ?", Self::NAME))
+                .interact()
+                .unwrap()
+                .then_some(Self::get_current(app).unwrap())
+        } else {
+            None
+        }
+    }
+
+    fn get_apply(&self) -> Result<()> {
+        if let Some(app) = Self::get_app() {
+            self.apply(app)
+        } else {
+            Ok(())
+        }
+    }
 }
 
 impl Theme {
     pub fn apply(&self) -> Result<()> {
         self.wallpaper_engine
             .as_ref()
-            .map(|w| w.apply())
+            .map(|w| w.get_apply())
             .transpose()?;
 
-        self.spicetify.as_ref().map(|s| s.apply()).transpose()?;
+        self.spicetify.as_ref().map(|s| s.get_apply()).transpose()?;
 
         Ok(())
     }
@@ -46,5 +77,9 @@ impl Theme {
 
     pub fn parse_json(content: &str) -> Result<Self> {
         Ok(serde_json::from_str(content)?)
+    }
+
+    pub fn write_json<P: AsRef<Path>>(&self, path: P) -> Result<()> {
+        Ok(fs::write(path, serde_json::to_string_pretty(&self)?)?)
     }
 }

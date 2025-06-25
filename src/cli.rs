@@ -28,6 +28,10 @@ pub fn error(err: impl Display) -> String {
     format!("{} {}", " ERR ".white().on_red().bold(), err)
 }
 
+pub fn display_error(msg: impl Display) {
+    println!("{}", error(msg))
+}
+
 pub fn success(msg: impl Display) -> String {
     format!("{} {}", " SUCCESS ".white().on_green().bold(), msg)
 }

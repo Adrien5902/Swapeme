@@ -4,10 +4,7 @@ use hex_color::HexColor;
 use serde::{Deserialize, Serialize};
 
 #[derive(Deserialize, Serialize)]
-pub struct RgbaHexColor {
-    #[serde(flatten)]
-    pub(crate) hex: HexColor,
-}
+pub struct RgbaHexColor(HexColor);
 
 impl JsonSchema for RgbaHexColor {
     fn schema_name() -> std::borrow::Cow<'static, str> {
